@@ -100,7 +100,7 @@ namespace TBAG
 			}
 		}
 
-
+		 
 		static void StartGame()
 		{
 			string currentLocation = "start";
