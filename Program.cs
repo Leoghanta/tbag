@@ -9,11 +9,6 @@ namespace TBAG
 		/*   Create a Maze
 		 *   
 		 *   Movement Commands - North, East, West, South
-		 *    
-		 *   S - R1 - R2   R5 - End
-		 *            |    | 
-		 *            R3 - R4 - D
-		 *            
 		 *  Each room is a dictionary of Title, Description and directions.
 		 *  The rooms are stored in a larger dictionary called ROOMS
 		 */
