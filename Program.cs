@@ -87,7 +87,7 @@ namespace TBAG
 
 		static List<string> COMMANDS = new List<string>
 		{
-			"north", "south", "east", "west", "eat", "inventory", "inv", "look",
+			"north", "south", "east", "west", "drop", "eat", "get", "inventory", "inv", "jump", "look",
 		};
 
 
@@ -99,7 +99,7 @@ namespace TBAG
 		static void Death(string reason)
 		{
             Console.WriteLine(new string('=', 80));
-            Console.WriteLine("\t\tYou Have Died!");
+            Console.WriteLine("\tYou Have Died!");
             Console.WriteLine($"\t\t{reason}");
 			Console.WriteLine(new string('=', 80));
 			Environment.Exit(0);
@@ -146,6 +146,42 @@ namespace TBAG
 
 
 		/// <summary>
+		/// Drop an item from inventory into location. 
+		/// </summary>
+		/// <param name="item">item to drop</param>
+		/// <param name="location">player's current location</param>
+		/// <param name="inventory">players inventory as list</param>
+		static void DropCommand(string item, string location, List<string> inventory)
+		{
+			//Does the item exist?
+			if (!ITEMS.ContainsKey(item))
+			{
+				Console.WriteLine($"The {item} does not exist.");
+				return;
+			}
+			if (!inventory.Contains(item))
+			{
+				Console.WriteLine($"You aren't carrying the {item}.");
+				return;
+			}
+
+            // Ok, drop the item them.
+            Console.WriteLine($"You drop your {item}.");
+			inventory.Remove(item);
+
+			// Is there an items list in the room location? if not, create one.
+			if (ROOMS[location].ContainsKey ("items"))
+			{
+				List<string> roomitems = (List<string>)ROOMS[location]["items"];
+				roomitems.Add(item);
+			} else
+			{
+				ROOMS[location]["items"] = new List<string> { item };
+			}
+		}
+
+
+		/// <summary>
 		/// Player eats an object.. or tries to.
 		/// </summary>
 		/// <param name="item">item they want to eat</param>
@@ -177,8 +213,41 @@ namespace TBAG
 			{
 				Death("Poisoned by an apple!");
 			}
-
         }
+
+		/// <summary>
+		/// Get Command. user picks an item up from room and puts it in inventory.
+		/// </summary>
+		/// <param name="item">item to get</param>
+		/// <param name="location">players current location</param>
+		/// <param name="inventory">player inventory</param>
+		static void GetCommand(string item, string location, List<string> inventory)
+		{
+			//Does the item exist?
+			if (!ITEMS.ContainsKey(item))
+			{
+				Console.WriteLine($"The {item} does not exist.");
+				return;
+			}
+			//Are there items in the room to get?
+			if (!ROOMS[location].ContainsKey("items"))
+			{
+				Console.WriteLine($"You fumble about but there is no {item} to get");
+				return;
+			}
+			//is THIS item in the room?
+			List<string> roomstuff = (List<string>)ROOMS[location]["items"];
+			if (!roomstuff.Contains(item))
+			{
+				Console.WriteLine($"The {item} is not here.");
+				return;
+			}
+
+            //Item exists and is here. get it.
+            Console.WriteLine($"You pick up the {item}");
+            roomstuff.Remove(item);
+			inventory.Add(item);
+		}
 
 		/// <summary>
 		/// Obtain text input from the user. 
@@ -225,6 +294,31 @@ namespace TBAG
 			}
 		}
 
+
+		static string JumpCommand(string location, List<string>inventory)
+		{
+			if (location == "cliff")
+			{
+				if (inventory.Contains("parachute"))
+				{
+					Console.WriteLine("Cluching your parachute, you take a brave leap off the cliff.");
+					Console.WriteLine("You float gently to the ground below.");
+					return "beach";
+				}
+				else
+				{
+					Console.WriteLine("You take a brave leap off the cliff.");
+                    Console.WriteLine("As you fall, you make a note of your poor life choices.");
+					Death(">SPLAT< Launched off a cliff!");
+                }
+			}
+            else
+            {
+                Console.WriteLine("You jump around excitedly.");
+            }
+			return location;	//if we didn't move, return the same location.
+        }
+
 		/// <summary>
 		/// Change a players location by travelling in a
 		/// direction noted in the lcation's valid exits.
@@ -268,6 +362,16 @@ namespace TBAG
 						currentLocation = TravelTo(currentLocation, commandList[0]);
 						DisplayRoom(currentLocation);
 						break;
+					case "drop":
+						if (commandList.Count() < 2)
+						{
+							Console.WriteLine("drop what?");
+						}
+						else
+						{
+							DropCommand(commandList[1], currentLocation, inventory);
+						}
+						break;
 					case "eat":
 						if (commandList.Count() < 2)
 						{
@@ -278,9 +382,26 @@ namespace TBAG
 							EatCommand(commandList[1], inventory);
 						}
 						break;
+					case "get":
+						if (commandList.Count() < 2)
+						{
+							Console.WriteLine("Get What?");
+						} else
+						{
+							GetCommand(commandList[1], currentLocation, inventory);
+						}
+						break;
 					case "inventory":
 					case "inv":
 						InventoryCommand(inventory);
+						break;
+					case "jump":
+						string newloc = JumpCommand(currentLocation, inventory);
+						if (newloc != currentLocation)
+						{
+							currentLocation = newloc;
+							DisplayRoom(currentLocation);
+						}
 						break;
 					case "look":
 						DisplayRoom(currentLocation);
