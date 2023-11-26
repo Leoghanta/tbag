@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Design;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace TBAG
@@ -50,7 +51,17 @@ namespace TBAG
 				{
 					{"title", "Beach by the cliff" },
 					{"desc", "You are on a small beach at the bottom of a cliff.!"},
-					{"items", new List<string>{"flare"} }
+					{"south", "cave" },
+					{"items", new List<string>{"sword"} }
+				}
+			},
+			//ROOM4
+			{"cave", new Dictionary<string, object>
+				{
+					{"title", "In a cave by the beach" },
+					{"desc", "You are in a dank cave. The only exit is north back to the beach."},
+					{"north", "beach" },
+					{"npc", new List<string>{"troll"} }
 				}
 			},
 		};
@@ -75,22 +86,111 @@ namespace TBAG
 				}
 			},
 
-			{"flare", new Dictionary<string, object>
+			{"sword", new Dictionary<string, object>
 				{
-					{"title", "A wee emergency flare gun" },
-					{"desc", "It is ready to fire. Best do this at the right place" },
+					{"title", "The broadsword of impecable power" },
+					{"desc", "It seems to vibrate with power." },
+					{"damage", 25 },
+				}
+			},
+
+			{"club", new Dictionary<string, object>
+				{
+					{"title", "A mighty wooden club" },
+					{"desc", "Best used for hitting people with" },
+					{"damage", 10 },
+				}
+			},
+			{"horn", new Dictionary<string, object>
+				{
+					{"title", "A beautfully crafted gold horn" },
+					{"desc", "Pucker up and blow!" },
 				}
 			}
+		};
 
+		// ITEMS
+		static Dictionary<string, Dictionary<string, object>> NPC = new Dictionary<string, Dictionary<string, object>>
+		{
+			//Start
+			{"troll", new Dictionary<string, object>
+				{
+					{"name", "The Cave Troll" },
+					{"desc", "He looks at you cautiously." },
+					{"damage", 10 },
+					{"armour", 10 },
+					{"weapon", "club" },
+					{"items", new List<string>{"club", "horn"} }
+				}
+			},
 		};
 
 
 		static List<string> COMMANDS = new List<string>
 		{
-			"north", "south", "east", "west", "drop", "eat", "get", "inventory", "inv", "jump", "look",
+			"north", "south", "east", "west", "examine", "ex", "drop", "eat", "get", "inventory", "inv", "jump", "look",
 		};
 
 
+
+		static void ExamineCommand(string item, string location, List<string> inventory)
+		{
+			// does the thing exist?
+			if (!ITEMS.ContainsKey(item) && !NPC.ContainsKey(item))
+			{
+				Console.WriteLine($"{item} does not exist in this universe!");
+				return;
+			}
+
+			// If they're an NPC, they need to be in the same room.
+			if (NPC.ContainsKey(item))
+			{
+				//Is there anybody in the room with the player?
+				if (ROOMS[location].ContainsKey("npc"))
+				{
+					//There is someone here - is it who we're looking for?
+					List<string> npcList = (List<string>)ROOMS[location]["npc"];
+					if (npcList.Contains(item))
+					{
+						//The NPC is here, examine them.
+						Console.WriteLine($"You examine {NPC[item]["name"]} closely.");
+						Console.WriteLine(NPC[item]["desc"]);
+						return;
+					}
+				}
+			}
+			
+			//Ok, it's not an NPC, let's see if it's an item.
+			if (ITEMS.ContainsKey(item))
+			{
+				//Are there items in the room?
+				if (ROOMS[location].ContainsKey("items"))
+				{
+					//There are items here - is it what we're looking for?
+					List<string> itemList = (List<string>)ROOMS[location]["items"];
+					if (itemList.Contains(item))
+					{
+						//The item is here, examine it.
+						Console.WriteLine($"You examine the {item} closely.");
+						Console.WriteLine(ITEMS[item]["desc"]);
+						return;
+					}
+				}
+
+				//It's not in the room, is it in my inventory?
+				if (inventory.Contains(item))
+				{
+					Console.WriteLine("You rummage through your belongings.");
+					Console.WriteLine($"You find the {item} and examine it closely.");
+					Console.WriteLine(ITEMS[item]["desc"]);
+					return;
+				}
+			}
+
+			//Can't find the item anywhere!
+			Console.WriteLine($"You look around but can't find the {item}.");
+		}
+	
 		/// <summary>
 		/// Player has died. Tell them and kick them off
 		/// the game.
@@ -115,13 +215,23 @@ namespace TBAG
 			Console.WriteLine(ROOMS[location]["desc"]);
 
 			// Items
-			if (ROOMS[location].ContainsKey("items"))
+			if (ROOMS[location].ContainsKey("items") || ROOMS[location].ContainsKey("npc"))
 			{
 				Console.WriteLine("You See:");
-				foreach (string item in (List<string>)ROOMS[location]["items"])
+				if (ROOMS[location].ContainsKey("npc"))
 				{
-					Console.WriteLine($"\t{ITEMS[item]["title"]}");
-                }
+					foreach (string npc in (List<string>)ROOMS[location]["npc"])
+					{
+						Console.WriteLine($"\t{NPC[npc]["name"]}");
+					}
+				}
+				if (ROOMS[location].ContainsKey("items"))
+				{
+					foreach (string item in (List<string>)ROOMS[location]["items"])
+					{
+						Console.WriteLine($"\t{ITEMS[item]["title"]}");
+					}
+				}
 			}
 
 			// Exits
@@ -348,6 +458,8 @@ namespace TBAG
 		{
 			string currentLocation = "start";
 			List<string> inventory = new List<string> { "apple" };
+			int damage = 10;
+			int armour = 0;
 			DisplayRoom(currentLocation);
 
 			while (true)
@@ -361,6 +473,17 @@ namespace TBAG
 					case "west":
 						currentLocation = TravelTo(currentLocation, commandList[0]);
 						DisplayRoom(currentLocation);
+						break;
+					case "examine":
+					case "ex":
+						if (commandList.Count() < 2)
+						{
+							Console.WriteLine("Examine what?");
+						}
+						else
+						{
+							ExamineCommand(commandList[1], currentLocation, inventory);
+						}
 						break;
 					case "drop":
 						if (commandList.Count() < 2)
