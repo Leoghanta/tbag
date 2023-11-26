@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace TBAG
 {
@@ -117,6 +118,7 @@ namespace TBAG
 				{
 					{"name", "The Cave Troll" },
 					{"desc", "He looks at you cautiously." },
+					{"health", 100 },
 					{"damage", 10 },
 					{"armour", 10 },
 					{"weapon", "club" },
@@ -128,10 +130,45 @@ namespace TBAG
 
 		static List<string> COMMANDS = new List<string>
 		{
-			"north", "south", "east", "west", "examine", "ex", "drop", "eat", "get", "inventory", "inv", "jump", "look",
+			"north", "south", "east", "west", "blow", "examine", "ex", "drop", "eat", "fight", "get", 
+			"inventory", "inv", "jump", "kill",  "look",
 		};
 
 
+		static void BlowCommand(string item, List<string> inventory, string location)
+		{
+			//Does the item exist?
+			if (!ITEMS.ContainsKey(item))
+			{
+				Console.WriteLine($"The {item} does not exist.");
+				return;
+			}
+			if (!inventory.Contains(item))
+			{
+				Console.WriteLine($"You aren't carrying the {item}.");
+				return;
+			}
+
+			// ok, let's blow it.
+			if (item == "horn" && location == "beach")
+			{
+                Console.WriteLine("You blow the horn as hard as you can.");
+                Console.WriteLine("A passing ship hears your cry and rescues you");
+                Console.WriteLine("You have escaped! Congratulations");
+				Environment.Exit(0);
+				return;
+            }
+			
+			if (item == "horn")
+			{
+				Console.WriteLine("You blow your horn.  Toot Toot!");
+				Console.WriteLine("nothing happened!");
+				return;
+			}
+
+            Console.WriteLine($"You put your {item} to your lips and blow");
+			Console.WriteLine("That was fun, wasn't it?");
+        }
 
 		static void ExamineCommand(string item, string location, List<string> inventory)
 		{
@@ -222,7 +259,14 @@ namespace TBAG
 				{
 					foreach (string npc in (List<string>)ROOMS[location]["npc"])
 					{
-						Console.WriteLine($"\t{NPC[npc]["name"]}");
+						Console.Write($"\t{NPC[npc]["name"]}");
+						if ((int)NPC[npc]["health"] <= 0)
+						{
+							Console.WriteLine(" is dead here.");
+						} else
+						{
+							Console.WriteLine(" is standing here.");
+						}
 					}
 				}
 				if (ROOMS[location].ContainsKey("items"))
@@ -324,6 +368,102 @@ namespace TBAG
 				Death("Poisoned by an apple!");
 			}
         }
+
+
+		static void FightCommand(string location, string opponent, int health, List<string> inv, int damage, int armour)
+		{
+			//Do they exist?
+			if (!NPC.ContainsKey(opponent))
+			{
+				Console.WriteLine($"You look around for {opponent} to fight!");
+				return;
+			}
+
+			//Is there anyone in the room?
+			if (!ROOMS[location].ContainsKey("npc"))
+			{
+				Console.WriteLine("There is nobody here to fight!");
+				return;
+			}
+
+			List<string> npcList = (List<string>)ROOMS[location]["npc"];
+			if (!npcList.Contains(opponent))
+			{
+				Console.WriteLine($"{opponent} is not here to fight.");
+				return;
+			}
+
+			// OK, they're here. Are they alive?
+			if ((int)NPC[opponent]["health"] <= 0)
+			{
+				Console.WriteLine($"You pummel the corpse of {opponent} for a bit.");
+				return;
+			}
+
+			//Start the fight loop. do they have the sword?
+			if (inv.Contains("sword"))
+			{
+				Console.WriteLine("You ready your sword for battle");
+				damage += (int)ITEMS["sword"]["damage"];
+			}
+			else
+			{
+				Console.WriteLine("You ready yourself to fight.");
+			}
+
+			while (health > 0 && (int)NPC[opponent]["health"] > 0)
+			{
+				Console.WriteLine($"Player: {health} || {NPC[opponent]["name"]}: {NPC[opponent]["health"]}");
+				//Player Strikes First
+				if (inv.Contains("sword")){
+					Console.WriteLine($"You swing your {ITEMS["sword"]["title"]} and hit {NPC[opponent]["name"]}");
+				} else
+				{
+					Console.WriteLine($"You lightly jab {NPC[opponent]["name"]} with your fist.");
+				}
+				// Calculate Damage
+				Random random = new Random();
+				int hitpoint = random.Next(0, damage);
+				int oppHealth = (int)NPC[opponent]["health"];
+				NPC[opponent]["health"] = oppHealth - hitpoint;
+
+				//Opponent Strikes Now.
+				if ((int)NPC[opponent]["health"] > 0)
+				{
+					int npcDamage = (int)NPC[opponent]["damage"];
+					Console.WriteLine($"{NPC[opponent]["name"]} hits you with a skillful blow!");
+					health = health - random.Next(npcDamage);
+				}
+
+				Thread.Sleep(800); //Slow down the fight a bit.
+            }
+
+			//Fight has ended. who died?
+			if (health <= 0){
+				Death($"Slain by {NPC[opponent]["name"]}");
+			} else
+			{
+				// drop the trolls inventory.
+				if (NPC[opponent].ContainsKey("items"))
+				{
+					List<string> opponentInventory = (List<string>)NPC[opponent]["items"];
+					foreach (string item in opponentInventory)
+					{
+						//if there's not a list, create one.
+						if (!ROOMS[location].ContainsKey("items"))
+						{
+							ROOMS[location]["items"] = new List<string> { item };
+						} else
+						{
+							List<string> roomitems = (List<string>)ROOMS[location]["items"];
+							roomitems.Add(item);
+						}
+						Console.WriteLine($"{NPC[opponent]["name"]} drops his {item}");
+					}
+				}
+				Console.WriteLine($"You have slain {NPC[opponent]["name"]}");
+			}
+		}
 
 		/// <summary>
 		/// Get Command. user picks an item up from room and puts it in inventory.
@@ -460,6 +600,7 @@ namespace TBAG
 			List<string> inventory = new List<string> { "apple" };
 			int damage = 10;
 			int armour = 0;
+			int health = 200;
 			DisplayRoom(currentLocation);
 
 			while (true)
@@ -473,6 +614,16 @@ namespace TBAG
 					case "west":
 						currentLocation = TravelTo(currentLocation, commandList[0]);
 						DisplayRoom(currentLocation);
+						break;
+					case "blow":
+						if (commandList.Count() < 2)
+						{
+							Console.WriteLine("Blow what?");
+						}
+						else
+						{
+							BlowCommand(commandList[1], inventory, currentLocation);
+						}
 						break;
 					case "examine":
 					case "ex":
@@ -503,6 +654,17 @@ namespace TBAG
 						else
 						{
 							EatCommand(commandList[1], inventory);
+						}
+						break;
+					case "fight":
+					case "kill":
+						if (commandList.Count() < 2)
+						{
+							Console.WriteLine("who do you want dead?");
+						}
+						else
+						{
+							FightCommand(currentLocation, commandList[1], health, inventory, damage, armour);
 						}
 						break;
 					case "get":
