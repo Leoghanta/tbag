@@ -1,7 +1,4 @@
-﻿using System.ComponentModel.Design;
-using System.Reflection;
-
-namespace TBAG
+﻿namespace TBAG
 {
 	internal class Program
 	{
@@ -98,9 +95,9 @@ namespace TBAG
 		/// <param name="reason">Reason for death as string</param>
 		static void Death(string reason)
 		{
-            Console.WriteLine(new string('=', 80));
-            Console.WriteLine("\tYou Have Died!");
-            Console.WriteLine($"\t\t{reason}");
+			Console.WriteLine(new string('=', 80));
+			Console.WriteLine("\tYou Have Died!");
+			Console.WriteLine($"\t\t{reason}");
 			Console.WriteLine(new string('=', 80));
 			Environment.Exit(0);
 		}
@@ -121,15 +118,15 @@ namespace TBAG
 				foreach (string item in (List<string>)ROOMS[location]["items"])
 				{
 					Console.WriteLine($"\t{ITEMS[item]["title"]}");
-                }
+				}
 			}
 
 			// Exits
-            Console.WriteLine("Obvious Exists are:");
-            if (ROOMS[location].ContainsKey("north") )
+			Console.WriteLine("Obvious Exists are:");
+			if (ROOMS[location].ContainsKey("north"))
 			{
-                Console.WriteLine($"\tnorth: {ROOMS[location]["north"]}");
-            }
+				Console.WriteLine($"\tnorth: {ROOMS[location]["north"]}");
+			}
 			if (ROOMS[location].ContainsKey("east"))
 			{
 				Console.WriteLine($"\teast:  {ROOMS[location]["east"]}");
@@ -165,16 +162,17 @@ namespace TBAG
 				return;
 			}
 
-            // Ok, drop the item them.
-            Console.WriteLine($"You drop your {item}.");
+			// Ok, drop the item them.
+			Console.WriteLine($"You drop your {item}.");
 			inventory.Remove(item);
 
 			// Is there an items list in the room location? if not, create one.
-			if (ROOMS[location].ContainsKey ("items"))
+			if (ROOMS[location].ContainsKey("items"))
 			{
 				List<string> roomitems = (List<string>)ROOMS[location]["items"];
 				roomitems.Add(item);
-			} else
+			}
+			else
 			{
 				ROOMS[location]["items"] = new List<string> { item };
 			}
@@ -190,9 +188,9 @@ namespace TBAG
 		{
 			if (!ITEMS.ContainsKey(item))
 			{
-                Console.WriteLine($"The {item} does not exist.");
+				Console.WriteLine($"The {item} does not exist.");
 				return;
-            }
+			}
 			if (!inv.Contains(item))
 			{
 				Console.WriteLine($"You aren't carrying the {item}");
@@ -204,8 +202,8 @@ namespace TBAG
 				return;
 			}
 
-            // item is here and we can eat. do eat.
-            Console.WriteLine($"You eat the {item}.");
+			// item is here and we can eat. do eat.
+			Console.WriteLine($"You eat the {item}.");
 			inv.Remove(item);
 
 			//Any Effects?
@@ -213,7 +211,7 @@ namespace TBAG
 			{
 				Death("Poisoned by an apple!");
 			}
-        }
+		}
 
 		/// <summary>
 		/// Get Command. user picks an item up from room and puts it in inventory.
@@ -243,9 +241,9 @@ namespace TBAG
 				return;
 			}
 
-            //Item exists and is here. get it.
-            Console.WriteLine($"You pick up the {item}");
-            roomstuff.Remove(item);
+			//Item exists and is here. get it.
+			Console.WriteLine($"You pick up the {item}");
+			roomstuff.Remove(item);
 			inventory.Add(item);
 		}
 
@@ -259,17 +257,18 @@ namespace TBAG
 		{
 			while (true)
 			{
-                Console.Write(">> ");
-                string input = Console.ReadLine().ToLower();
+				Console.Write(">> ");
+				string input = Console.ReadLine().ToLower();
 				string[] inputsplit = input.Split(" ");
 
-				if (COMMANDS.Contains(inputsplit[0])){
+				if (COMMANDS.Contains(inputsplit[0]))
+				{
 					return inputsplit;
 				}
 				else
 				{
-                    Console.WriteLine("I don't know what that means!");
-                }
+					Console.WriteLine("I don't know what that means!");
+				}
 			}
 		}
 
@@ -295,7 +294,7 @@ namespace TBAG
 		}
 
 
-		static string JumpCommand(string location, List<string>inventory)
+		static string JumpCommand(string location, List<string> inventory)
 		{
 			if (location == "cliff")
 			{
@@ -308,16 +307,16 @@ namespace TBAG
 				else
 				{
 					Console.WriteLine("You take a brave leap off the cliff.");
-                    Console.WriteLine("As you fall, you make a note of your poor life choices.");
+					Console.WriteLine("As you fall, you make a note of your poor life choices.");
 					Death(">SPLAT< Launched off a cliff!");
-                }
+				}
 			}
-            else
-            {
-                Console.WriteLine("You jump around excitedly.");
-            }
-			return location;	//if we didn't move, return the same location.
-        }
+			else
+			{
+				Console.WriteLine("You jump around excitedly.");
+			}
+			return location;    //if we didn't move, return the same location.
+		}
 
 		/// <summary>
 		/// Change a players location by travelling in a
@@ -340,7 +339,7 @@ namespace TBAG
 			}
 		}
 
-		 
+
 		/// <summary>
 		/// Start the game loop
 		/// </summary>
@@ -386,7 +385,8 @@ namespace TBAG
 						if (commandList.Count() < 2)
 						{
 							Console.WriteLine("Get What?");
-						} else
+						}
+						else
 						{
 							GetCommand(commandList[1], currentLocation, inventory);
 						}
@@ -406,7 +406,7 @@ namespace TBAG
 					case "look":
 						DisplayRoom(currentLocation);
 						break;
-					default: 
+					default:
 						Console.WriteLine("I don't know what that is!");
 						break;
 				}
